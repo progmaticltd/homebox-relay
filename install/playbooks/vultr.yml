@@ -1,0 +1,9 @@
+---
+
+# This playbooks build a VM on Vultr (https://vultr.com/)
+- name: Build a vultr server using the API
+  vars_files:
+    - '{{ playbook_dir }}/../../config/system.yml'
+  hosts: localhost
+  roles:
+    - role: vultr-vm-provision

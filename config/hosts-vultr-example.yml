@@ -1,0 +1,16 @@
+---
+
+# You can test this inventory using the following command line:
+# export VULTR_API_KEY=RAR56673DUKLV2R7MLA4YHWZXZUNPEVOA3AT
+# ansible-inventory --list -i ../config/hosts-vultr.yml
+
+plugin: vultr
+keyed_groups:
+  - prefix: vultr_region
+    key: region | lower
+  - separator: ""
+    key: os
+
+# Pass a tag filter to the API
+plugin: vultr
+filter_by_tag: Cache

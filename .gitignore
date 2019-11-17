@@ -1,7 +1,7 @@
-# Ignore everything on the config folder, except sample and default files
-config/*
-!config/defaults.yml
-!config/*-example.yml
+
+# Ignore the user config and hosts file
+config/system.yml
+config/hosts.yml
 
 # Ignore ansible error files
 *.retry
@@ -12,10 +12,6 @@ logs/*
 # Ignore markdown preview files
 README.html
 .markdown-preview.html
-
-# Sandbox folder for user tests
-sandbox/*
-!sandbox/readme.md
 
 # Backup folder for deployment files
 backup/*

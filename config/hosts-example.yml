@@ -1,0 +1,18 @@
+---
+
+# This configuration should contains two hosts:
+# The relay server, and your local homebox IP address
+# The VPN server will be installed on the relay, and the
+# vpn client on your homebox.
+# You can also use the dynamic inventory, see the vultr example
+
+all:
+  hosts:
+    homebox-relay:
+      ansible_host: 78.141.199.216
+      ansible_user: root
+      ansible_port: 22
+    homebox:
+      ansible_host: 192.168.42.12
+      ansible_user: root
+      ansible_port: 22

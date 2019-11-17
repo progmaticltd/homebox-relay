@@ -1,0 +1,61 @@
+---
+
+# All these tasks should occurs on the local server
+
+# This first task is only to make sure the API settings are correct
+- name: Get the accounts facts first
+  tags: facts
+  vultr_account_facts:
+    api_account: '{{ vultr.api.account }}'
+    api_key: '{{ vultr.api.key }}'
+
+- name: Display the current configuration
+  debug:
+    var: '{{ system }}'
+
+- name: Make sure your SSH key is uploaded on Vultr
+  vultr_ssh_key:
+    api_account: '{{ vultr.api.account }}'
+    api_key: '{{ vultr.api.key }}'
+    name: '{{ key.name }}'
+    ssh_key: "{{ lookup('file', key.path) }}"
+  with_items:
+    - '{{ system.ssh_keys }}'
+  loop_control:
+    loop_var: key
+
+- name: Create the firewall rules
+  vultr_firewall_group:
+    api_account: '{{ vultr.api.account }}'
+    api_key: '{{ vultr.api.key }}'
+    name: homebox-relay
+    state: present
+
+- name: Create the firewall rule for IPv4
+  vultr_firewall_rule:
+    api_account: '{{ vultr.api.account }}'
+    api_key: '{{ vultr.api.key }}'
+    group: homebox-relay
+    protocol: '{{ rule.proto }}'
+    port: '{{ rule.port }}'
+    ip_version: v4
+  with_items:
+    - proto: udp
+      port: 1194
+    - proto: tcp
+      port: 22
+  loop_control:
+    loop_var: rule
+
+- name: Create the Vultr server if not exists
+  vultr_server:
+    name: '{{ system.name | default(system.hostname) }}'
+    api_account: '{{ vultr.api.account }}'
+    api_key: '{{ vultr.api.key }}'
+    hostname: '{{ system.hostname }}'
+    os: '{{ system.os }}'
+    ipv6_enabled: '{{ system.ipv6_enabled }}'
+    region: '{{ system.region }}'
+    plan: '{{ system.plan }}'
+    ssh_keys: '{{ system.ssh_keys | map(attribute="name") | list }}'
+    firewall_group: homebox-relay
