@@ -7,10 +7,19 @@ vultr:
     key: ~      # Put your api key here or left it to null to get it from default ansible settings
                 # See https://docs.ansible.com/ansible/latest/modules/vultr_account_info_module.html
 
+# Client configuration (homebox)
+client:
+  domain: mybox.io
+
+# Where to save the VPN configuration for homebox
+# By default, it will copy in homebox/backup/<domain>/<vpn-type>/
+# with homebox at the same level as homebox-relay
+# backup_folder: /tmp/xxxx
 
 # Configuration example
 system:
   name: homebox-relay                      # If you are using dynamic inventory, this name should be in your hosts file too.
+  vpn: fastd                               # The type of vpn to use. fastd at the moment
   hostname: foxy                           # The host name is not really important, you can put anything you want
   ipv6_enabled: true                       # If you want to use an IPv6 for your box too
   region: London                           # See https://www.vultr.com/features/datacenter-locations/
