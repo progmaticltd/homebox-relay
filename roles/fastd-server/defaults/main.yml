@@ -1,0 +1,5 @@
+---
+
+# Default settings for fastd
+fastd:
+  port: 14789

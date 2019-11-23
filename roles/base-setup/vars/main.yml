@@ -1,0 +1,16 @@
+---
+
+# System required packages
+# the havegd package speed up password generation
+system_required:
+  - unattended-upgrades
+  - locales
+  - fail2ban
+  - ufw
+  - rsync
+  - makepasswd
+  - haveged
+
+# Packages to exclude
+system_excluded:
+  - resolvconf

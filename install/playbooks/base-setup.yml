@@ -1,0 +1,8 @@
+---
+
+- name: Configure the base settings
+  hosts: homebox-relay
+  vars_files:
+    - '{{ playbook_dir }}/../../config/system.yml'
+  roles:
+    - role: base-setup

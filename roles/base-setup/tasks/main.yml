@@ -1,0 +1,127 @@
+---
+
+# This seems to happen with some cloud providers, the first time the server boots
+# Wait until no one locks the dpkg / apt loc file
+- name: Wait for apt to be unlocked
+  tags: apt
+  register: result
+  retries: 9
+  delay: 5
+  shell: >-
+    set -o pipefail ;
+    test -f /var/lib/dpkg/lock &&
+    ls -l /proc/*/fd/* 2>/dev/null | grep '/var/lib/dpkg/lock' ;
+    echo
+  args:
+    executable: /bin/bash
+  until: (result.stdout | length) == 0
+
+# Install the most required packages
+- name: Update packages cache if older than 1h
+  tags: apt
+  apt:
+    cache_valid_time: 3600
+    update_cache: true
+
+# Install swap if not enough memory available
+- name: Install memory swap package
+  when: ansible_memtotal_mb < 2048
+  apt:
+    name: dphys-swapfile
+    state: present
+
+- name: Upgrade the distribution
+  tags: apt
+  apt:
+    upgrade: true
+
+- name: Install required packages
+  tags: apt
+  apt:
+    name: "{{ system_required }}"
+    state: present
+
+- name: Remove packages to exclude
+  tags: apt
+  apt:
+    name: "{{ system_excluded }}"
+    state: absent
+
+# We are going to install the "unattended-upgrades" package, and to
+# configure it to install security updates automatically.
+- name: Configure the automatic security updates
+  tags: security
+  debconf:
+    name: unattended-upgrades
+    question: '{{ conf.question }}'
+    value: '{{ conf.value }}'
+    vtype: '{{ conf.type }}'
+  with_items:
+    - question: unattended-upgrades/origins_pattern
+      value: 'origin=Debian,codename=${distro_codename},label=Debian-Security'
+      type: string
+    - question: unattended-upgrades/enable_auto_updates
+      value: '{{ security.auto_update | ternary("true", "false") }}'
+      type: boolean
+  loop_control:
+    loop_var: conf
+
+- name: Get the locale value on the current machine
+  tags: locale
+  delegate_to: localhost
+  set_fact:
+    locale: "{{ lookup('env','LANG') }}"
+
+# We are going to install the "unattended-upgrades" package, and to
+# configure it to install security updates automatically.
+- name: Configure locales
+  tags: locale
+  debconf:
+    name: locales
+    question: '{{ conf.question }}'
+    value: '{{ conf.value }}'
+    vtype: '{{ conf.type }}'
+  with_items:
+    - question: locales/locales_to_be_generated
+      value: '{{ locale }}'
+      type: multiselect
+    - question: locales/default_environment_locale
+      value: '{{ locale }}'
+      type: boolean
+  loop_control:
+    loop_var: conf
+
+- name: Update /etc/locales
+  tags: locale
+  replace:
+    path: /etc/locale.gen
+    regexp: '^# {{ locale | regex_replace("\.", "\\.") }}'
+    replace: '{{ locale }}'
+
+- name: Configure locales
+  tags: locale
+  shell: dpkg-reconfigure -phigh locales
+
+# If IPv6 is not needed, disable it entirely
+- name: Disable IPv6 if not needed
+  sysctl:
+    name: '{{ entry_name }}'
+    value: '{{ 1 if system.ipv6_enabled else 0 }}'
+  with_items:
+    - net.ipv6.conf.all.disable_ipv6
+    - net.ipv6.conf.default.disable_ipv6
+  loop_control:
+    loop_var: entry_name
+
+- name: Authorise connection on SSH port
+  notify: Enable ufw
+  ufw:
+    port: 22
+    proto: tcp
+    comment: 'Allow SSH access'
+    rule: allow
+
+- name: Activate some aliases in bashrc
+  template:
+    src: bashrc
+    dest: /root/.bashrc

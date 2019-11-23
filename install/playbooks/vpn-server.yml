@@ -1,0 +1,8 @@
+---
+
+- name: Install a VPN server to relay the traffic to the box
+  hosts: homebox-relay
+  vars_files:
+    - '{{ playbook_dir }}/../../config/system.yml'
+  roles:
+    - role: '{{ system.vpn }}-server'

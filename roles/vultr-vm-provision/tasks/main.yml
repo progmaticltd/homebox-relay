@@ -38,16 +38,19 @@
     group: homebox-relay
     protocol: '{{ rule.proto }}'
     port: '{{ rule.port }}'
+    rule: '{{ rule.rule }}'
+    comment: '{{ rule.comment }}'
     ip_version: v4
   with_items:
     - proto: udp
-      port: 1194
+      port: 14789
     - proto: tcp
       port: 22
   loop_control:
     loop_var: rule
 
 - name: Create the Vultr server if not exists
+  register: status
   vultr_server:
     name: '{{ system.name | default(system.hostname) }}'
     api_account: '{{ vultr.api.account }}'
@@ -59,3 +62,10 @@
     plan: '{{ system.plan }}'
     ssh_keys: '{{ system.ssh_keys | map(attribute="name") | list }}'
     firewall_group: homebox-relay
+
+- name: Add the server to the list of hosts
+  add_host:
+    name: '{{ system.name }}'
+    ansible_host: '{{ status.vultr_server.v4_main_ip }}'
+    ansible_port: 22
+    groups: relays

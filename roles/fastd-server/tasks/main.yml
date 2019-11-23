@@ -1,0 +1,76 @@
+---
+
+- name: Install the required packages
+  apt:
+    name: '{{ vpn_packages }}'
+
+- name: Create a secure directory to generate the keys
+  file:
+    path: /root/fastd/
+    state: directory
+
+- name: Generate the secrets
+  shell: >-
+    fastd --generate-key
+    > /root/fastd/secret-{{ client.domain }}
+  args:
+    creates: '/root/fastd/secret-{{ client.domain }}'
+
+- name: Get the public key
+  register: public_key_cmd
+  shell: >-
+    sed -n 's/Public: //p' '/root/fastd/secret-{{ client.domain }}'
+  changed_when: false
+
+- name: Store the public key
+  set_fact:
+    public_key: '{{ public_key_cmd.stdout }}'
+
+- name: Get the secret key
+  register: secret_key_cmd
+  shell: >-
+    sed -n 's/Secret: //p'
+    /root/fastd/secret-{{ client.domain }}
+  changed_when: false
+
+- name: Store the secret key
+  set_fact:
+    secret_key: '{{ secret_key_cmd.stdout }}'
+
+- name: Copy the configuration
+  register: config
+  template:
+    src: fastd.conf
+    dest: /etc/fastd/fastd.conf
+
+- name: Change the default settings
+  notify: Restart fastd
+  replace:
+    path: /etc/default/fastd
+    regexp: 'AUTOSTART="none"'
+    replace: 'AUTOSTART="all"'
+
+- name: Open the firewall on the appropriate port
+  ufw:
+    port: '{{ fastd.port }}'
+    proto: udp
+    comment: 'Allow fast VPN access (fastd)'
+    rule: allow
+
+# By default, if homebox-relay and homebox are at the same level,
+# save the keys in the backup folder.
+- name: Set the backup folder
+  set_fact:
+    backup_folder: '{{ backup_folder | default(playbook_dir + "/../../../homebox/backup") }}'
+
+- name: Save the private/public keys locally, in the homebox backup folder
+  delegate_to: localhost
+  template:
+    src: client.conf
+    dest: '{{ backup_folder }}/{{ client.domain }}/fastd/client.conf'
+
+- name: Remove the private/public keys from the server
+  when: config.changed
+  file:
+    path: '/root/fastd'
+    state: absent

@@ -1,0 +1,7 @@
+---
+
+- name: Call the provisioning playbook
+  import_playbook: vultr.yml
+
+- name: Set up the VPN server
+  import_playbook: vpn-server.yml

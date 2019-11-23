@@ -1,0 +1,4 @@
+---
+
+security:
+  auto_update: true                        # Install security updates automatically, using unattended-upgrades
